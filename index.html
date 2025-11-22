@@ -403,6 +403,7 @@
             font-size: 0.8rem;
             color: var(--gray-500);
             text-align: center;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -488,7 +489,8 @@
 
     <!-- Аудио элемент для звуковых эффектов -->
     <audio id="distanceSound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+        <source src="sound.mp3" type="audio/mpeg">
+        Ваш браузер не поддерживает аудио элемент.
     </audio>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -531,10 +533,11 @@
         let lastSoundTime = 0;
         let soundEnabled = true;
         
-        // Локальные фото (положите файлы me.png и place.png в ту же папку)
+        // Локальные файлы (положите в ту же папку)
         const userPhoto = 'me.png';
         const targetPhoto = 'place.png';
         const loadingPhoto = 'place.png';
+        const soundFile = 'sound.mp3';
         
         // Элементы DOM
         const getLocationBtn = document.getElementById('getLocationBtn');
@@ -579,7 +582,6 @@
         soundIndicator.addEventListener('click', () => {
             soundEnabled = !soundEnabled;
             soundIndicator.textContent = soundEnabled ? '🔊 Звук включен' : '🔇 Звук выключен';
-            soundIndicator.style.cursor = 'pointer';
         });
         
         // Очистка истории
@@ -953,8 +955,8 @@
             // Воспроизводим звук в зависимости от расстояния
             playDistanceSound(distance);
             
-            // Обновление каждые 2 секунды, если пользователь движется
-            setTimeout(updateDistance, 2000);
+            // Обновление каждые 0.1 секунды для плавности
+            setTimeout(updateDistance, 100);
         }
         
         // Функция показа статуса
@@ -992,13 +994,9 @@
                 if (userMarker) {
                     userMarker.setLatLng([userLocation.lat, userLocation.lng]);
                     userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
-                    
-                    if (targetLocation) {
-                        updateDistance();
-                    }
                 }
             }
-        }, 3000);
+        }, 100); // 0.1 секунды для плавного движения
     </script>
 </body>
 </html>
