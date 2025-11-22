@@ -983,20 +983,7 @@
                 statusMessageElement.classList.add('hidden');
             }, 5000);
         }
-        
-        // Имитация движения пользователя (для демонстрации)
-        setInterval(() => {
-            if (userLocation && targetLocation && Math.random() < 0.3) {
-                // Небольшое случайное изменение местоположения
-                userLocation.lat += (Math.random() - 0.5) * 0.0001;
-                userLocation.lng += (Math.random() - 0.5) * 0.0001;
-                
-                if (userMarker) {
-                    userMarker.setLatLng([userLocation.lat, userLocation.lng]);
-                    userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
-                }
-            }
-        }, 100); // 0.1 секунды для плавного движения
     </script>
 </body>
 </html>
+
