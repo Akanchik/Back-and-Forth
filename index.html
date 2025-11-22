@@ -486,6 +486,12 @@
             text-align: center;
             cursor: pointer;
         }
+        
+        .history-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -639,7 +645,12 @@
                 goalReached: "Поздравляем! Вы достигли цели!",
                 notReached: "Вы еще не достигли цели",
                 reportSubmitted: "Отчет успешно отправлен!",
-                historyCleared: "История очищена!"
+                historyCleared: "История очищена!",
+                journeyTime: "Время в пути:",
+                pointReset: "Целевая точка сброшена",
+                distanceToTarget: "Расстояние до цели:",
+                meters: "м",
+                kilometers: "км"
             },
             en: {
                 title: "Back and Forth",
@@ -683,7 +694,12 @@
                 goalReached: "Congratulations! You reached the goal!",
                 notReached: "You haven't reached the goal yet",
                 reportSubmitted: "Report successfully submitted!",
-                historyCleared: "History cleared!"
+                historyCleared: "History cleared!",
+                journeyTime: "Journey time:",
+                pointReset: "Target point reset",
+                distanceToTarget: "Distance to target:",
+                meters: "m",
+                kilometers: "km"
             }
         };
 
@@ -990,8 +1006,12 @@
                 showStatus(translations[currentLanguage].goalReached, 'success');
                 reportSection.classList.remove('hidden');
                 stopJourneyTimer();
+                
+                // Сохраняем время пути для истории
+                const journeyTimeFormatted = timerDisplay.textContent;
+                localStorage.setItem('lastJourneyTime', journeyTimeFormatted);
             } else {
-                showStatus(`${translations[currentLanguage].notReached}. Осталось: ${Math.round(distance)}м`, 'error');
+                showStatus(`${translations[currentLanguage].notReached}. ${translations[currentLanguage].distanceToTarget} ${Math.round(distance)}${translations[currentLanguage].meters}`, 'error');
             }
         }
 
@@ -1000,6 +1020,10 @@
             timerSection.classList.add('hidden');
             reportSection.classList.remove('hidden');
             showStatus(translations[currentLanguage].journeyCompleted, 'success');
+            
+            // Сохраняем время пути для истории
+            const journeyTimeFormatted = timerDisplay.textContent;
+            localStorage.setItem('lastJourneyTime', journeyTimeFormatted);
         }
 
         function cancelJourney() {
@@ -1032,7 +1056,7 @@
             reportSection.classList.add('hidden');
             stopJourneyTimer();
             
-            showStatus('Целевая точка сброшена', 'info');
+            showStatus(translations[currentLanguage].pointReset, 'info');
         }
 
         function submitReport() {
@@ -1071,9 +1095,13 @@
                 photoHTML = `<img src="${currentPhoto}" class="history-photo" alt="Фото отчета">`;
             }
             
+            // Получаем сохраненное время пути
+            const journeyTimeFormatted = localStorage.getItem('lastJourneyTime') || timerDisplay.textContent;
+            
             historyItem.innerHTML = `
                 <div class="history-date">${dateString} <span class="mode-indicator ${modeClass}">${modeText}</span></div>
                 <div class="history-coords">${targetLocation.lat.toFixed(4)}° с.ш., ${targetLocation.lng.toFixed(4)}° в.д.</div>
+                <div class="history-time">${translations[currentLanguage].journeyTime} ${journeyTimeFormatted}</div>
                 <div class="history-report">${report}</div>
                 ${photoHTML}
             `;
@@ -1121,7 +1149,13 @@
             if (!userLocation || !targetLocation) return;
             
             const distance = calculateDistance(userLocation, targetLocation);
-            distanceInfoElement.textContent = `Расстояние: ${Math.round(distance)} м`;
+            let distanceText;
+            if (distance < 1000) {
+                distanceText = `${translations[currentLanguage].distanceToTarget} ${Math.round(distance)}${translations[currentLanguage].meters}`;
+            } else {
+                distanceText = `${translations[currentLanguage].distanceToTarget} ${(distance/1000).toFixed(1)}${translations[currentLanguage].kilometers}`;
+            }
+            distanceInfoElement.textContent = distanceText;
             playDistanceSound(distance);
             setTimeout(updateDistance, 100);
         }
@@ -1154,7 +1188,7 @@
 
         function setMode(mode) {
             modeOptions.forEach(opt => opt.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelector(`.mode-option[data-mode="${mode}"]`).classList.add('active');
             currentMode = mode;
             checkInRadius = modeSettings[currentMode].checkInRadius;
             updateModeInfo();
@@ -1167,15 +1201,15 @@
             let modeClass = '';
             switch(currentMode) {
                 case 'kids':
-                    modeText = translations[currentLanguage].modeKids + ' • Радиус: 500 м';
+                    modeText = translations[currentLanguage].modeKids + ' • ' + translations[currentLanguage].distanceToTarget + ' 500 ' + translations[currentLanguage].meters;
                     modeClass = 'mode-kids';
                     break;
                 case 'adults':
-                    modeText = translations[currentLanguage].modeAdults + ' • Радиус: 2 км';
+                    modeText = translations[currentLanguage].modeAdults + ' • ' + translations[currentLanguage].distanceToTarget + ' 2 ' + translations[currentLanguage].kilometers;
                     modeClass = 'mode-adults';
                     break;
                 case 'travelers':
-                    modeText = translations[currentLanguage].modeTravelers + ' • Радиус: 10 км';
+                    modeText = translations[currentLanguage].modeTravelers + ' • ' + translations[currentLanguage].distanceToTarget + ' 10 ' + translations[currentLanguage].kilometers;
                     modeClass = 'mode-travelers';
                     break;
             }
