@@ -630,7 +630,16 @@
                 clearHistory: "Очистить историю",
                 footer: "Туда-Сюда &copy; 2025 | Открой для себя новые горизонты!",
                 loading: "Ищем интересное место...",
-                found: "Место найдено!"
+                found: "Место найдено!",
+                locationFound: "Местоположение определено!",
+                destinationFound: "Точка назначения найдена!",
+                journeyStarted: "Путь начат! Время пошло...",
+                journeyCompleted: "Путь завершен!",
+                journeyCancelled: "Путь отменен",
+                goalReached: "Поздравляем! Вы достигли цели!",
+                notReached: "Вы еще не достигли цели",
+                reportSubmitted: "Отчет успешно отправлен!",
+                historyCleared: "История очищена!"
             },
             en: {
                 title: "Back and Forth",
@@ -665,7 +674,16 @@
                 clearHistory: "Clear History",
                 footer: "Back and Forth &copy; 2025 | Discover new horizons!",
                 loading: "Looking for an interesting place...",
-                found: "Place found!"
+                found: "Place found!",
+                locationFound: "Location determined!",
+                destinationFound: "Destination found!",
+                journeyStarted: "Journey started! Time is ticking...",
+                journeyCompleted: "Journey completed!",
+                journeyCancelled: "Journey cancelled",
+                goalReached: "Congratulations! You reached the goal!",
+                notReached: "You haven't reached the goal yet",
+                reportSubmitted: "Report successfully submitted!",
+                historyCleared: "History cleared!"
             }
         };
 
@@ -704,6 +722,7 @@
         let journeyStartTime = null;
         let journeyTime = 0;
         let currentPhoto = null;
+        let map = null;
 
         // Локальные файлы
         const userPhoto = 'me.png';
@@ -748,14 +767,41 @@
             updateLanguage();
             updateTheme();
             initMap();
+            setupEventListeners();
         }
 
         function initMap() {
-            const map = L.map('map').setView([55.7558, 37.6173], 13);
+            map = L.map('map').setView([55.7558, 37.6173], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
-            window.map = map;
+        }
+
+        function setupEventListeners() {
+            // Основные кнопки
+            getLocationBtn.addEventListener('click', getCurrentLocation);
+            generatePointBtn.addEventListener('click', generateTargetPoint);
+            startJourneyBtn.addEventListener('click', startJourney);
+            checkInBtn.addEventListener('click', checkIn);
+            newPointBtn.addEventListener('click', resetTargetPoint);
+            completeJourneyBtn.addEventListener('click', completeJourney);
+            cancelJourneyBtn.addEventListener('click', cancelJourney);
+            submitReportBtn.addEventListener('click', submitReport);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // Настройки
+            themeToggle.addEventListener('click', toggleTheme);
+            languageToggle.addEventListener('click', toggleLanguage);
+            soundIndicator.addEventListener('click', toggleSound);
+            
+            // Режимы
+            modeOptions.forEach(option => {
+                option.addEventListener('click', () => setMode(option.dataset.mode));
+            });
+            
+            // Фото
+            addPhotoBtn.addEventListener('click', () => photoInput.click());
+            photoInput.addEventListener('change', handlePhotoUpload);
         }
 
         // Система перевода
@@ -792,11 +838,130 @@
                 currentTheme = settings.theme || 'light';
                 soundEnabled = settings.soundEnabled !== false;
             }
-            soundIndicator.textContent = soundEnabled ? '🔊 ' + translations[currentLanguage].soundOn : '🔇 ' + translations[currentLanguage].soundOff;
-            languageToggle.textContent = currentLanguage === 'ru' ? 'EN' : 'RU';
+            updateSoundIndicator();
         }
 
-        // Таймер пути
+        function updateSoundIndicator() {
+            soundIndicator.innerHTML = soundEnabled ? 
+                '🔊 <span data-lang="soundOn">' + translations[currentLanguage].soundOn + '</span>' :
+                '🔇 <span data-lang="soundOff">' + translations[currentLanguage].soundOff + '</span>';
+        }
+
+        // Основные функции
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
+                        generatePointBtn.disabled = false;
+                        
+                        if (userMarker) {
+                            map.removeLayer(userMarker);
+                        }
+                        
+                        userMarker = L.marker([userLocation.lat, userLocation.lng], {
+                            icon: createCustomMarker(userPhoto, true)
+                        }).addTo(map).bindPopup('Ваше местоположение').openPopup();
+                        
+                        map.setView([userLocation.lat, userLocation.lng], 15);
+                        
+                        showStatus(translations[currentLanguage].locationFound, 'success');
+                    },
+                    error => {
+                        showStatus('Ошибка определения местоположения: ' + error.message, 'error');
+                    }
+                );
+            } else {
+                showStatus('Геолокация не поддерживается вашим браузером.', 'error');
+            }
+        }
+
+        function createCustomMarker(photoUrl, isUser = false) {
+            const className = isUser ? 'user-marker' : 'target-marker';
+            const size = isUser ? 75 : 75;
+            
+            return L.divIcon({
+                className: className,
+                html: `<img src="${photoUrl}" alt="${isUser ? 'Ваше местоположение' : 'Целевая точка'}" width="${size}" height="${size}">`,
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
+            });
+        }
+
+        function generateTargetPoint() {
+            if (!userLocation) return;
+            
+            showLoadingScreen(true);
+            
+            setTimeout(() => {
+                showLoadingScreen(false);
+                
+                setTimeout(() => {
+                    const radius = modeSettings[currentMode].radius;
+                    const randomPoint = generateRandomPoint(userLocation, radius);
+                    
+                    targetLocation = randomPoint;
+                    hideLoadingScreen();
+                    
+                    targetCoordsElement.textContent = `${targetLocation.lat.toFixed(6)}° с.ш., ${targetLocation.lng.toFixed(6)}° в.д.`;
+                    
+                    if (targetMarker) {
+                        map.removeLayer(targetMarker);
+                    }
+                    
+                    targetMarker = L.marker([targetLocation.lat, targetLocation.lng], {
+                        icon: createCustomMarker(targetPhoto, false)
+                    }).addTo(map).bindPopup('Целевая точка').openPopup();
+                    
+                    if (distanceCircle) {
+                        map.removeLayer(distanceCircle);
+                    }
+                    
+                    distanceCircle = L.circle([targetLocation.lat, targetLocation.lng], {
+                        color: '#8b5cf6',
+                        fillColor: '#8b5cf6',
+                        fillOpacity: 0.1,
+                        radius: checkInRadius
+                    }).addTo(map);
+                    
+                    const group = new L.featureGroup([targetMarker]);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                    
+                    updateDistance();
+                    updateModeInfo();
+                    
+                    startJourneyBtn.classList.remove('hidden');
+                    newPointBtn.classList.remove('hidden');
+                    
+                    showStatus(translations[currentLanguage].destinationFound, 'success');
+                }, 500);
+            }, 3000);
+        }
+
+        function generateRandomPoint(center, radiusKm) {
+            const radiusDeg = radiusKm / 111;
+            const angle = Math.random() * 2 * Math.PI;
+            const distance = Math.random() * radiusDeg;
+            
+            const lat = center.lat + (distance * Math.cos(angle));
+            const lng = center.lng + (distance * Math.sin(angle));
+            
+            return { lat, lng };
+        }
+
+        function startJourney() {
+            startJourneyBtn.classList.add('hidden');
+            checkInBtn.classList.remove('hidden');
+            timerSection.classList.remove('hidden');
+            startJourneyTimer();
+            showStatus(translations[currentLanguage].journeyStarted, 'info');
+        }
+
         function startJourneyTimer() {
             journeyStartTime = Date.now();
             journeyTimer = setInterval(() => {
@@ -816,27 +981,305 @@
             }
         }
 
-        // Обработчики событий
-        themeToggle.addEventListener('click', () => {
+        function checkIn() {
+            if (!userLocation || !targetLocation) return;
+            
+            const distance = calculateDistance(userLocation, targetLocation);
+            
+            if (distance <= checkInRadius) {
+                showStatus(translations[currentLanguage].goalReached, 'success');
+                reportSection.classList.remove('hidden');
+                stopJourneyTimer();
+            } else {
+                showStatus(`${translations[currentLanguage].notReached}. Осталось: ${Math.round(distance)}м`, 'error');
+            }
+        }
+
+        function completeJourney() {
+            stopJourneyTimer();
+            timerSection.classList.add('hidden');
+            reportSection.classList.remove('hidden');
+            showStatus(translations[currentLanguage].journeyCompleted, 'success');
+        }
+
+        function cancelJourney() {
+            stopJourneyTimer();
+            timerSection.classList.add('hidden');
+            startJourneyBtn.classList.remove('hidden');
+            showStatus(translations[currentLanguage].journeyCancelled, 'info');
+        }
+
+        function resetTargetPoint() {
+            targetLocation = null;
+            targetCoordsElement.textContent = translations[currentLanguage].notGenerated;
+            distanceInfoElement.textContent = '';
+            modeInfoElement.textContent = '';
+            
+            if (targetMarker) {
+                map.removeLayer(targetMarker);
+                targetMarker = null;
+            }
+            
+            if (distanceCircle) {
+                map.removeLayer(distanceCircle);
+                distanceCircle = null;
+            }
+            
+            startJourneyBtn.classList.add('hidden');
+            checkInBtn.classList.add('hidden');
+            newPointBtn.classList.add('hidden');
+            timerSection.classList.add('hidden');
+            reportSection.classList.add('hidden');
+            stopJourneyTimer();
+            
+            showStatus('Целевая точка сброшена', 'info');
+        }
+
+        function submitReport() {
+            const report = reportText.value.trim();
+            
+            if (report === '') {
+                showStatus('Пожалуйста, напишите отчет', 'error');
+                return;
+            }
+            
+            const now = new Date();
+            const dateString = now.toLocaleDateString('ru-RU') + ', ' + now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            let modeClass = '';
+            let modeText = '';
+            switch(currentMode) {
+                case 'kids':
+                    modeClass = 'mode-kids';
+                    modeText = translations[currentLanguage].modeKids;
+                    break;
+                case 'adults':
+                    modeClass = 'mode-adults';
+                    modeText = translations[currentLanguage].modeAdults;
+                    break;
+                case 'travelers':
+                    modeClass = 'mode-travelers';
+                    modeText = translations[currentLanguage].modeTravelers;
+                    break;
+            }
+            
+            let photoHTML = '';
+            if (currentPhoto) {
+                photoHTML = `<img src="${currentPhoto}" class="history-photo" alt="Фото отчета">`;
+            }
+            
+            historyItem.innerHTML = `
+                <div class="history-date">${dateString} <span class="mode-indicator ${modeClass}">${modeText}</span></div>
+                <div class="history-coords">${targetLocation.lat.toFixed(4)}° с.ш., ${targetLocation.lng.toFixed(4)}° в.д.</div>
+                <div class="history-report">${report}</div>
+                ${photoHTML}
+            `;
+            
+            historyList.prepend(historyItem);
+            saveHistory();
+            
+            reportText.value = '';
+            photoPreview.style.display = 'none';
+            currentPhoto = null;
+            reportSection.classList.add('hidden');
+            
+            showStatus(translations[currentLanguage].reportSubmitted, 'success');
+        }
+
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentPhoto = event.target.result;
+                    photoPreview.src = currentPhoto;
+                    photoPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function calculateDistance(point1, point2) {
+            const R = 6371e3;
+            const φ1 = point1.lat * Math.PI / 180;
+            const φ2 = point2.lat * Math.PI / 180;
+            const Δφ = (point2.lat - point1.lat) * Math.PI / 180;
+            const Δλ = (point2.lng - point1.lng) * Math.PI / 180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c;
+        }
+
+        function updateDistance() {
+            if (!userLocation || !targetLocation) return;
+            
+            const distance = calculateDistance(userLocation, targetLocation);
+            distanceInfoElement.textContent = `Расстояние: ${Math.round(distance)} м`;
+            playDistanceSound(distance);
+            setTimeout(updateDistance, 100);
+        }
+
+        function playDistanceSound(distance) {
+            if (!soundEnabled) return;
+            
+            const now = Date.now();
+            const timeSinceLastSound = now - lastSoundTime;
+            
+            let minInterval = 500;
+            let maxInterval = 10000;
+            
+            let targetInterval;
+            if (distance <= checkInRadius) {
+                targetInterval = minInterval;
+            } else if (distance >= 1000) {
+                targetInterval = maxInterval;
+            } else {
+                const progress = (distance - checkInRadius) / (1000 - checkInRadius);
+                targetInterval = minInterval + progress * (maxInterval - minInterval);
+            }
+            
+            if (timeSinceLastSound >= targetInterval) {
+                distanceSound.currentTime = 0;
+                distanceSound.play().catch(e => console.log('Audio play failed:', e));
+                lastSoundTime = now;
+            }
+        }
+
+        function setMode(mode) {
+            modeOptions.forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            currentMode = mode;
+            checkInRadius = modeSettings[currentMode].checkInRadius;
+            updateModeInfo();
+        }
+
+        function updateModeInfo() {
+            if (!targetLocation) return;
+            
+            let modeText = '';
+            let modeClass = '';
+            switch(currentMode) {
+                case 'kids':
+                    modeText = translations[currentLanguage].modeKids + ' • Радиус: 500 м';
+                    modeClass = 'mode-kids';
+                    break;
+                case 'adults':
+                    modeText = translations[currentLanguage].modeAdults + ' • Радиус: 2 км';
+                    modeClass = 'mode-adults';
+                    break;
+                case 'travelers':
+                    modeText = translations[currentLanguage].modeTravelers + ' • Радиус: 10 км';
+                    modeClass = 'mode-travelers';
+                    break;
+            }
+            
+            modeInfoElement.innerHTML = `<span class="mode-indicator ${modeClass}">${modeText}</span>`;
+        }
+
+        function toggleTheme() {
             currentTheme = currentTheme === 'light' ? 'dark' : 'light';
             updateTheme();
             saveSettings();
-        });
+        }
 
-        languageToggle.addEventListener('click', () => {
+        function toggleLanguage() {
             currentLanguage = currentLanguage === 'ru' ? 'en' : 'ru';
             updateLanguage();
             saveSettings();
-            soundIndicator.textContent = soundEnabled ? '🔊 ' + translations[currentLanguage].soundOn : '🔇 ' + translations[currentLanguage].soundOff;
-        });
+            updateSoundIndicator();
+            languageToggle.textContent = currentLanguage === 'ru' ? 'EN' : 'RU';
+        }
 
-        // ... остальные обработчики остаются такими же, но с обновленными текстами
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            updateSoundIndicator();
+            saveSettings();
+        }
+
+        function showLoadingScreen(animate) {
+            loadingScreen.classList.add('active');
+            loadingIcon.src = loadingPhoto;
+            
+            if (animate) {
+                loadingIcon.classList.remove('static');
+                loadingIcon.classList.add('animating');
+                document.querySelector('.loading-text').textContent = translations[currentLanguage].loading;
+            } else {
+                loadingIcon.classList.remove('animating');
+                loadingIcon.classList.add('static');
+                document.querySelector('.loading-text').textContent = translations[currentLanguage].found;
+            }
+        }
+
+        function hideLoadingScreen() {
+            loadingScreen.classList.remove('active');
+        }
+
+        function showStatus(message, type) {
+            statusMessageElement.textContent = message;
+            statusMessageElement.className = 'status-message';
+            
+            switch(type) {
+                case 'success':
+                    statusMessageElement.classList.add('status-success');
+                    break;
+                case 'error':
+                    statusMessageElement.classList.add('status-error');
+                    break;
+                case 'info':
+                    statusMessageElement.classList.add('status-info');
+                    break;
+            }
+            
+            statusMessageElement.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusMessageElement.classList.add('hidden');
+            }, 5000);
+        }
+
+        function saveHistory() {
+            const historyItems = Array.from(historyList.children).map(item => ({
+                html: item.innerHTML,
+                timestamp: item.querySelector('.history-date').textContent
+            }));
+            localStorage.setItem('randonauticaHistory', JSON.stringify(historyItems));
+        }
+
+        function loadHistory() {
+            const savedHistory = localStorage.getItem('randonauticaHistory');
+            if (savedHistory) {
+                try {
+                    const historyItems = JSON.parse(savedHistory);
+                    historyItems.forEach(item => {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.innerHTML = item.html;
+                        historyList.appendChild(historyItem);
+                    });
+                } catch (e) {
+                    console.log('Ошибка загрузки истории:', e);
+                }
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Вы уверены, что хотите очистить всю историю?')) {
+                localStorage.removeItem('randonauticaHistory');
+                historyList.innerHTML = '';
+                showStatus(translations[currentLanguage].historyCleared, 'success');
+            }
+        }
 
         // Запуск приложения
         init();
-
-        // Остальной код функций (createCustomMarker, получение геолокации, генерация точек и т.д.)
-        // остается таким же, но с использованием системы перевода для сообщений
     </script>
 </body>
 </html>
