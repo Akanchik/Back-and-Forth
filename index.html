@@ -600,18 +600,32 @@
             display: none !important;
         }
         
-        .custom-marker {
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            border: 3px solid var(--primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            background-size: cover;
-            background-position: center;
+        .location-tracker {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: var(--surface-color);
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
         }
         
-        .target-marker {
-            border-color: var(--purple);
+        .tracking-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        .tracking-indicator.inactive {
+            background: var(--text-secondary);
+            animation: none;
         }
     </style>
 </head>
@@ -641,6 +655,10 @@
                     <div class="map-style-option active" data-style="vector">Стандартная</div>
                     <div class="map-style-option" data-style="satellite">Спутник</div>
                     <div class="map-style-option" data-style="hybrid">Гибрид</div>
+                </div>
+                <div class="location-tracker hidden" id="locationTracker">
+                    <div class="tracking-indicator" id="trackingIndicator"></div>
+                    <span data-lang="trackingActive">Отслеживание активно</span>
                 </div>
             </section>
             
@@ -673,6 +691,8 @@
                     </div>
                     
                     <button id="getLocationBtn" class="button" data-lang="getLocation">Определить мое местоположение</button>
+                    <button id="startTrackingBtn" class="button button-success hidden" data-lang="startTracking">Начать отслеживание</button>
+                    <button id="stopTrackingBtn" class="button button-danger hidden" data-lang="stopTracking">Остановить отслеживание</button>
                     <button id="generatePointBtn" class="button" disabled data-lang="findDestination">Найти точку назначения</button>
                     <button id="startJourneyBtn" class="button button-success hidden" data-lang="startJourney">В путь!</button>
                     <button id="checkInBtn" class="button button-success hidden" data-lang="checkIn">Отметить прибытие</button>
@@ -755,6 +775,8 @@
                 modeTravelers: "Для путешественников",
                 modeTravelersDesc: "Дальние расстояния, уникальные места",
                 getLocation: "Определить мое местоположение",
+                startTracking: "Начать отслеживание",
+                stopTracking: "Остановить отслеживание",
                 findDestination: "Найти точку назначения",
                 startJourney: "В путь!",
                 checkIn: "Отметить прибытие",
@@ -794,7 +816,10 @@
                 kilometers: "км",
                 pointsLabel: "Накопленные баллы",
                 pointsEarned: "Получено баллов:",
-                pointsTotal: "Всего баллов:"
+                pointsTotal: "Всего баллов:",
+                trackingActive: "Отслеживание активно",
+                trackingStarted: "Отслеживание начато",
+                trackingStopped: "Отслеживание остановлено"
             },
             en: {
                 title: "Back and Forth",
@@ -807,6 +832,8 @@
                 modeTravelers: "For Travelers",
                 modeTravelersDesc: "Long distances, unique places",
                 getLocation: "Get My Location",
+                startTracking: "Start Tracking",
+                stopTracking: "Stop Tracking",
                 findDestination: "Find Destination",
                 startJourney: "Start Journey!",
                 checkIn: "Check In",
@@ -846,7 +873,10 @@
                 kilometers: "km",
                 pointsLabel: "Total points",
                 pointsEarned: "Points earned:",
-                pointsTotal: "Total points:"
+                pointsTotal: "Total points:",
+                trackingActive: "Tracking active",
+                trackingStarted: "Tracking started",
+                trackingStopped: "Tracking stopped"
             }
         };
 
@@ -891,6 +921,8 @@
         let map = null;
         let currentMapStyle = 'vector';
         let userPoints = 0;
+        let locationWatchId = null;
+        let isTracking = false;
 
         // Локальные файлы
         const userPhoto = 'me.png';
@@ -900,6 +932,8 @@
 
         // Элементы DOM
         const getLocationBtn = document.getElementById('getLocationBtn');
+        const startTrackingBtn = document.getElementById('startTrackingBtn');
+        const stopTrackingBtn = document.getElementById('stopTrackingBtn');
         const generatePointBtn = document.getElementById('generatePointBtn');
         const startJourneyBtn = document.getElementById('startJourneyBtn');
         const checkInBtn = document.getElementById('checkInBtn');
@@ -934,6 +968,8 @@
         const locateUserBtn = document.getElementById('locateUserBtn');
         const pointsValue = document.getElementById('pointsValue');
         const pointsIcon = document.getElementById('pointsIcon');
+        const locationTracker = document.getElementById('locationTracker');
+        const trackingIndicator = document.getElementById('trackingIndicator');
 
         // Инициализация
         function init() {
@@ -990,6 +1026,8 @@
         function setupEventListeners() {
             // Основные кнопки
             getLocationBtn.addEventListener('click', getCurrentLocation);
+            startTrackingBtn.addEventListener('click', startLocationTracking);
+            stopTrackingBtn.addEventListener('click', stopLocationTracking);
             generatePointBtn.addEventListener('click', generateTargetPoint);
             startJourneyBtn.addEventListener('click', startJourney);
             checkInBtn.addEventListener('click', checkIn);
@@ -1114,49 +1152,107 @@
                 '🔇 <span data-lang="soundOff">' + translations[currentLanguage].soundOff + '</span>';
         }
 
-        // Основные функции
+        // Функции для работы с местоположением
         function getCurrentLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     position => {
-                        userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        
-                        userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
-                        generatePointBtn.disabled = false;
-                        
-                        // Создаем маркер пользователя на Яндекс.Карте
-                        if (userMarker) {
-                            map.geoObjects.remove(userMarker);
-                        }
-                        
-                        userMarker = new ymaps.Placemark(
-                            [userLocation.lat, userLocation.lng],
-                            {
-                                hintContent: 'Ваше местоположение',
-                                balloonContent: 'Вы здесь!'
-                            },
-                            {
-                                iconLayout: 'default#image',
-                                iconImageHref: userPhoto,
-                                iconImageSize: [75, 75],
-                                iconImageOffset: [-37, -37]
-                            }
-                        );
-                        
-                        map.geoObjects.add(userMarker);
-                        map.setCenter([userLocation.lat, userLocation.lng], 15);
-                        
+                        updateUserLocation(position);
                         showStatus(translations[currentLanguage].locationFound, 'success');
+                        
+                        // Показываем кнопку для начала отслеживания
+                        startTrackingBtn.classList.remove('hidden');
+                        getLocationBtn.classList.add('hidden');
                     },
                     error => {
                         showStatus('Ошибка определения местоположения: ' + error.message, 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     }
                 );
             } else {
                 showStatus('Геолокация не поддерживается вашим браузером.', 'error');
+            }
+        }
+
+        function startLocationTracking() {
+            if (navigator.geolocation) {
+                locationWatchId = navigator.geolocation.watchPosition(
+                    position => {
+                        updateUserLocation(position);
+                    },
+                    error => {
+                        showStatus('Ошибка отслеживания местоположения: ' + error.message, 'error');
+                        stopLocationTracking();
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+                
+                isTracking = true;
+                startTrackingBtn.classList.add('hidden');
+                stopTrackingBtn.classList.remove('hidden');
+                locationTracker.classList.remove('hidden');
+                trackingIndicator.classList.remove('inactive');
+                showStatus(translations[currentLanguage].trackingStarted, 'success');
+            }
+        }
+
+        function stopLocationTracking() {
+            if (locationWatchId) {
+                navigator.geolocation.clearWatch(locationWatchId);
+                locationWatchId = null;
+            }
+            
+            isTracking = false;
+            stopTrackingBtn.classList.add('hidden');
+            startTrackingBtn.classList.remove('hidden');
+            locationTracker.classList.add('hidden');
+            trackingIndicator.classList.add('inactive');
+            showStatus(translations[currentLanguage].trackingStopped, 'info');
+        }
+
+        function updateUserLocation(position) {
+            userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            
+            // Обновляем координаты в интерфейсе
+            userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
+            
+            // Обновляем маркер на карте
+            if (userMarker) {
+                userMarker.geometry.setCoordinates([userLocation.lat, userLocation.lng]);
+            } else {
+                // Создаем маркер пользователя на Яндекс.Карте
+                userMarker = new ymaps.Placemark(
+                    [userLocation.lat, userLocation.lng],
+                    {
+                        hintContent: 'Ваше местоположение',
+                        balloonContent: 'Вы здесь!'
+                    },
+                    {
+                        iconLayout: 'default#image',
+                        iconImageHref: userPhoto,
+                        iconImageSize: [75, 75],
+                        iconImageOffset: [-37, -37]
+                    }
+                );
+                
+                map.geoObjects.add(userMarker);
+                generatePointBtn.disabled = false;
+            }
+            
+            // Автоматически обновляем расстояние до цели
+            if (targetLocation) {
+                updateDistance();
             }
         }
 
@@ -1250,6 +1346,12 @@
             checkInBtn.classList.remove('hidden');
             timerSection.classList.remove('hidden');
             startJourneyTimer();
+            
+            // Автоматически включаем отслеживание при начале пути
+            if (!isTracking) {
+                startLocationTracking();
+            }
+            
             showStatus(translations[currentLanguage].journeyStarted, 'info');
         }
 
@@ -1442,7 +1544,6 @@
             }
             distanceInfoElement.textContent = distanceText;
             playDistanceSound(distance);
-            setTimeout(updateDistance, 100);
         }
 
         function playDistanceSound(distance) {
