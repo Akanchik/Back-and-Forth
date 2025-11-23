@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Туда-Сюда</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         * {
             margin: 0;
@@ -495,32 +494,6 @@
             }
         }
         
-        /* Стили для кастомных маркеров */
-        .user-marker {
-            background: transparent !important;
-            border: none !important;
-        }
-        
-        .target-marker {
-            background: transparent !important;
-            border: none !important;
-        }
-        
-        .user-marker img, .target-marker img {
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            border: 3px solid var(--primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            transition: transform 0.3s ease;
-        }
-        
-        .target-marker img {
-            border-color: var(--purple);
-            width: 75px;
-            height: 75px;
-        }
-        
         .mode-indicator {
             display: inline-block;
             padding: 4px 8px;
@@ -617,6 +590,29 @@
             font-size: 0.8rem;
             font-weight: bold;
         }
+        
+        /* Стили для Яндекс карты */
+        .ymaps-2-1-79-controls__control {
+            margin: 10px !important;
+        }
+        
+        .ymaps-2-1-79-map-copyrights-promo {
+            display: none !important;
+        }
+        
+        .custom-marker {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .target-marker {
+            border-color: var(--purple);
+        }
     </style>
 </head>
 <body>
@@ -642,11 +638,9 @@
                     <button class="map-control-btn" id="locateUserBtn">📍 Я</button>
                 </div>
                 <div class="map-style-selector" id="mapStyleSelector">
-                    <div class="map-style-option active" data-style="osm">Стандартная</div>
+                    <div class="map-style-option active" data-style="vector">Стандартная</div>
                     <div class="map-style-option" data-style="satellite">Спутник</div>
-                    <div class="map-style-option" data-style="dark">Темная</div>
-                    <div class="map-style-option" data-style="terrain">Рельеф</div>
-                    <div class="map-style-option" data-style="minimal">Минимальная</div>
+                    <div class="map-style-option" data-style="hybrid">Гибрид</div>
                 </div>
             </section>
             
@@ -745,7 +739,8 @@
         Ваш браузер не поддерживает аудио элемент.
     </audio>
 
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Подключаем API Яндекс.Карт -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_ключ_api&lang=ru_RU" type="text/javascript"></script>
     <script>
         // Система перевода
         const translations = {
@@ -877,35 +872,6 @@
             }
         };
 
-        // Настройки стилей карты
-        const mapStyles = {
-            osm: {
-                name: "Стандартная",
-                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            },
-            satellite: {
-                name: "Спутник",
-                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            },
-            dark: {
-                name: "Темная",
-                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            },
-            terrain: {
-                name: "Рельеф",
-                url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-            },
-            minimal: {
-                name: "Минимальная",
-                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            }
-        };
-
         // Переменные для хранения данных
         let userLocation = null;
         let userMarker = null;
@@ -923,8 +889,7 @@
         let journeyTime = 0;
         let currentPhoto = null;
         let map = null;
-        let currentMapStyle = 'osm';
-        let mapLayer = null;
+        let currentMapStyle = 'vector';
         let userPoints = 0;
 
         // Локальные файлы
@@ -982,25 +947,35 @@
         }
 
         function initMap() {
-            // Используем карту OpenStreetMap по умолчанию
-            map = L.map('map').setView([55.7558, 37.6173], 13);
-            updateMapStyle();
-            
-            // Добавляем контролы масштабирования
-            L.control.zoom({
-                position: 'bottomright'
-            }).addTo(map);
+            // Инициализируем Яндекс.Карту
+            ymaps.ready(() => {
+                map = new ymaps.Map('map', {
+                    center: [55.7558, 37.6173],
+                    zoom: 13,
+                    controls: ['zoomControl', 'fullscreenControl']
+                }, {
+                    searchControlProvider: 'yandex#search'
+                });
+                
+                // Устанавливаем стандартный тип карты
+                updateMapStyle();
+            });
         }
 
         function updateMapStyle() {
-            if (mapLayer) {
-                map.removeLayer(mapLayer);
+            if (map) {
+                switch(currentMapStyle) {
+                    case 'vector':
+                        map.setType('yandex#map');
+                        break;
+                    case 'satellite':
+                        map.setType('yandex#satellite');
+                        break;
+                    case 'hybrid':
+                        map.setType('yandex#hybrid');
+                        break;
+                }
             }
-            
-            const style = mapStyles[currentMapStyle];
-            mapLayer = L.tileLayer(style.url, {
-                attribution: style.attribution
-            }).addTo(map);
             
             // Обновляем активный стиль в селекторе
             mapStyleOptions.forEach(option => {
@@ -1128,7 +1103,7 @@
                 currentLanguage = settings.language || 'ru';
                 currentTheme = settings.theme || 'light';
                 soundEnabled = settings.soundEnabled !== false;
-                currentMapStyle = settings.mapStyle || 'osm';
+                currentMapStyle = settings.mapStyle || 'vector';
             }
             updateSoundIndicator();
         }
@@ -1152,15 +1127,27 @@
                         userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
                         generatePointBtn.disabled = false;
                         
+                        // Создаем маркер пользователя на Яндекс.Карте
                         if (userMarker) {
-                            map.removeLayer(userMarker);
+                            map.geoObjects.remove(userMarker);
                         }
                         
-                        userMarker = L.marker([userLocation.lat, userLocation.lng], {
-                            icon: createCustomMarker(userPhoto, true)
-                        }).addTo(map).bindPopup('Ваше местоположение').openPopup();
+                        userMarker = new ymaps.Placemark(
+                            [userLocation.lat, userLocation.lng],
+                            {
+                                hintContent: 'Ваше местоположение',
+                                balloonContent: 'Вы здесь!'
+                            },
+                            {
+                                iconLayout: 'default#image',
+                                iconImageHref: userPhoto,
+                                iconImageSize: [75, 75],
+                                iconImageOffset: [-37, -37]
+                            }
+                        );
                         
-                        map.setView([userLocation.lat, userLocation.lng], 15);
+                        map.geoObjects.add(userMarker);
+                        map.setCenter([userLocation.lat, userLocation.lng], 15);
                         
                         showStatus(translations[currentLanguage].locationFound, 'success');
                     },
@@ -1171,18 +1158,6 @@
             } else {
                 showStatus('Геолокация не поддерживается вашим браузером.', 'error');
             }
-        }
-
-        function createCustomMarker(photoUrl, isUser = false) {
-            const className = isUser ? 'user-marker' : 'target-marker';
-            const size = isUser ? 75 : 75;
-            
-            return L.divIcon({
-                className: className,
-                html: `<img src="${photoUrl}" alt="${isUser ? 'Ваше местоположение' : 'Целевая точка'}" width="${size}" height="${size}">`,
-                iconSize: [size, size],
-                iconAnchor: [size/2, size/2]
-            });
         }
 
         function generateTargetPoint() {
@@ -1202,27 +1177,51 @@
                     
                     targetCoordsElement.textContent = `${targetLocation.lat.toFixed(6)}° с.ш., ${targetLocation.lng.toFixed(6)}° в.д.`;
                     
+                    // Создаем маркер цели на Яндекс.Карте
                     if (targetMarker) {
-                        map.removeLayer(targetMarker);
+                        map.geoObjects.remove(targetMarker);
                     }
                     
-                    targetMarker = L.marker([targetLocation.lat, targetLocation.lng], {
-                        icon: createCustomMarker(targetPhoto, false)
-                    }).addTo(map).bindPopup('Целевая точка').openPopup();
+                    targetMarker = new ymaps.Placemark(
+                        [targetLocation.lat, targetLocation.lng],
+                        {
+                            hintContent: 'Целевая точка',
+                            balloonContent: 'Ваша цель!'
+                        },
+                        {
+                            iconLayout: 'default#image',
+                            iconImageHref: targetPhoto,
+                            iconImageSize: [75, 75],
+                            iconImageOffset: [-37, -37]
+                        }
+                    );
                     
+                    map.geoObjects.add(targetMarker);
+                    
+                    // Создаем круг для зоны прибытия
                     if (distanceCircle) {
-                        map.removeLayer(distanceCircle);
+                        map.geoObjects.remove(distanceCircle);
                     }
                     
-                    distanceCircle = L.circle([targetLocation.lat, targetLocation.lng], {
-                        color: '#8b5cf6',
-                        fillColor: '#8b5cf6',
-                        fillOpacity: 0.1,
-                        radius: checkInRadius
-                    }).addTo(map);
+                    distanceCircle = new ymaps.Circle([
+                        [targetLocation.lat, targetLocation.lng],
+                        checkInRadius
+                    ], {}, {
+                        fillColor: "rgba(139, 92, 246, 0.1)",
+                        strokeColor: "#8b5cf6",
+                        strokeOpacity: 0.8,
+                        strokeWidth: 2
+                    });
                     
-                    const group = new L.featureGroup([userMarker, targetMarker]);
-                    map.fitBounds(group.getBounds().pad(0.1));
+                    map.geoObjects.add(distanceCircle);
+                    
+                    // Устанавливаем границы отображения
+                    map.setBounds([
+                        [userLocation.lat, userLocation.lng],
+                        [targetLocation.lat, targetLocation.lng]
+                    ], {
+                        checkZoomRange: true
+                    });
                     
                     updateDistance();
                     updateModeInfo();
@@ -1324,12 +1323,12 @@
             modeInfoElement.textContent = '';
             
             if (targetMarker) {
-                map.removeLayer(targetMarker);
+                map.geoObjects.remove(targetMarker);
                 targetMarker = null;
             }
             
             if (distanceCircle) {
-                map.removeLayer(distanceCircle);
+                map.geoObjects.remove(distanceCircle);
                 distanceCircle = null;
             }
             
@@ -1536,7 +1535,7 @@
 
         function locateUser() {
             if (userLocation) {
-                map.setView([userLocation.lat, userLocation.lng], 15);
+                map.setCenter([userLocation.lat, userLocation.lng], 15);
             } else {
                 showStatus('Сначала определите ваше местоположение', 'error');
             }
