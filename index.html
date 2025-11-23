@@ -67,7 +67,7 @@
             gap: 10px;
         }
         
-        .theme-toggle, .language-toggle, .map-style-toggle {
+        .theme-toggle, .language-toggle {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -77,7 +77,7 @@
             transition: all 0.2s;
         }
         
-        .theme-toggle:hover, .language-toggle:hover, .map-style-toggle:hover {
+        .theme-toggle:hover, .language-toggle:hover {
             background: var(--primary);
             color: white;
         }
@@ -134,12 +134,15 @@
             background: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 6px 10px;
+            padding: 8px 12px;
             cursor: pointer;
             color: var(--text-primary);
             transition: all 0.2s;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .map-control-btn:hover {
@@ -555,6 +558,65 @@
             color: var(--text-secondary);
             margin-top: 4px;
         }
+        
+        .points-system {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+        
+        .points-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .points-info {
+            flex: 1;
+        }
+        
+        .points-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .points-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .points-earned {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .history-points {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 8px;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -563,7 +625,6 @@
             <div class="header-controls">
                 <button class="theme-toggle" id="themeToggle">🌙</button>
                 <button class="language-toggle" id="languageToggle">EN</button>
-                <button class="map-style-toggle" id="mapStyleToggle">🗺️ Стиль карты</button>
             </div>
             <h1 data-lang="title">Туда-Сюда</h1>
             <p class="tagline" data-lang="tagline">Открой для себя новые места. Достигай случайных точек и делись впечатлениями.</p>
@@ -577,9 +638,8 @@
                 </div>
                 <div id="map"></div>
                 <div class="map-controls">
-                    <button class="map-control-btn" id="zoomInBtn">+</button>
-                    <button class="map-control-btn" id="zoomOutBtn">-</button>
-                    <button class="map-control-btn" id="locateUserBtn">📍</button>
+                    <button class="map-control-btn" id="mapStyleToggle">🗺️ Стиль</button>
+                    <button class="map-control-btn" id="locateUserBtn">📍 Я</button>
                 </div>
                 <div class="map-style-selector" id="mapStyleSelector">
                     <div class="map-style-option active" data-style="osm">Стандартная</div>
@@ -591,6 +651,16 @@
             </section>
             
             <section class="controls-section">
+                <div class="points-system">
+                    <div class="points-icon" id="pointsIcon">
+                        <img src="place.png" alt="Баллы" style="width: 30px; height: 30px;">
+                    </div>
+                    <div class="points-info">
+                        <div class="points-value" id="pointsValue">0</div>
+                        <div class="points-label" data-lang="pointsLabel">Накопленные баллы</div>
+                    </div>
+                </div>
+                
                 <div class="control-group">
                     <h2 data-lang="modeTitle">Режим приключения</h2>
                     <div class="mode-selector">
@@ -726,7 +796,10 @@
                 pointReset: "Целевая точка сброшена",
                 distanceToTarget: "Расстояние до цели:",
                 meters: "м",
-                kilometers: "км"
+                kilometers: "км",
+                pointsLabel: "Накопленные баллы",
+                pointsEarned: "Получено баллов:",
+                pointsTotal: "Всего баллов:"
             },
             en: {
                 title: "Back and Forth",
@@ -775,7 +848,10 @@
                 pointReset: "Target point reset",
                 distanceToTarget: "Distance to target:",
                 meters: "m",
-                kilometers: "km"
+                kilometers: "km",
+                pointsLabel: "Total points",
+                pointsEarned: "Points earned:",
+                pointsTotal: "Total points:"
             }
         };
 
@@ -784,17 +860,20 @@
             kids: {
                 radius: 0.5,
                 checkInRadius: 100,
-                description: "Безопасные места поблизости"
+                description: "Безопасные места поблизости",
+                basePoints: 10
             },
             adults: {
                 radius: 2,
                 checkInRadius: 50,
-                description: "Интересные локации в пешей доступности"
+                description: "Интересные локации в пешей доступности",
+                basePoints: 25
             },
             travelers: {
                 radius: 10,
                 checkInRadius: 25,
-                description: "Уникальные места для исследования"
+                description: "Уникальные места для исследования",
+                basePoints: 50
             }
         };
 
@@ -846,11 +925,13 @@
         let map = null;
         let currentMapStyle = 'osm';
         let mapLayer = null;
+        let userPoints = 0;
 
         // Локальные файлы
         const userPhoto = 'me.png';
         const targetPhoto = 'place.png';
         const loadingPhoto = 'place.png';
+        const pointsPhoto = 'place.png';
 
         // Элементы DOM
         const getLocationBtn = document.getElementById('getLocationBtn');
@@ -885,14 +966,15 @@
         const mapStyleToggle = document.getElementById('mapStyleToggle');
         const mapStyleSelector = document.getElementById('mapStyleSelector');
         const mapStyleOptions = document.querySelectorAll('.map-style-option');
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
         const locateUserBtn = document.getElementById('locateUserBtn');
+        const pointsValue = document.getElementById('pointsValue');
+        const pointsIcon = document.getElementById('pointsIcon');
 
         // Инициализация
         function init() {
             loadHistory();
             loadSettings();
+            loadPoints();
             updateLanguage();
             updateTheme();
             initMap();
@@ -900,6 +982,7 @@
         }
 
         function initMap() {
+            // Используем карту OpenStreetMap по умолчанию
             map = L.map('map').setView([55.7558, 37.6173], 13);
             updateMapStyle();
             
@@ -962,8 +1045,6 @@
             });
             
             // Управление картой
-            zoomInBtn.addEventListener('click', () => map.zoomIn());
-            zoomOutBtn.addEventListener('click', () => map.zoomOut());
             locateUserBtn.addEventListener('click', locateUser);
             
             // Закрытие селектора стилей при клике вне его
@@ -988,6 +1069,45 @@
         function updateTheme() {
             document.documentElement.setAttribute('data-theme', currentTheme);
             themeToggle.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+        }
+
+        // Система баллов
+        function loadPoints() {
+            const savedPoints = localStorage.getItem('userPoints');
+            if (savedPoints) {
+                userPoints = parseInt(savedPoints);
+                pointsValue.textContent = userPoints;
+            }
+        }
+
+        function savePoints() {
+            localStorage.setItem('userPoints', userPoints.toString());
+        }
+
+        function calculatePoints(distance, mode) {
+            const basePoints = modeSettings[mode].basePoints;
+            const maxDistance = modeSettings[mode].checkInRadius;
+            
+            // Чем ближе к цели, тем больше баллов
+            // Если расстояние меньше радиуса проверки, получаем максимальные баллы
+            if (distance <= maxDistance) {
+                return basePoints;
+            }
+            
+            // Если дальше, то баллы уменьшаются пропорционально
+            const distanceFactor = Math.max(0, 1 - (distance - maxDistance) / 1000);
+            return Math.round(basePoints * distanceFactor);
+        }
+
+        function addPoints(points) {
+            userPoints += points;
+            pointsValue.textContent = userPoints;
+            pointsValue.classList.add('points-earned');
+            setTimeout(() => {
+                pointsValue.classList.remove('points-earned');
+            }, 500);
+            savePoints();
+            return points;
         }
 
         // Сохранение настроек
@@ -1159,27 +1279,35 @@
             const distance = calculateDistance(userLocation, targetLocation);
             
             if (distance <= checkInRadius) {
-                showStatus(translations[currentLanguage].goalReached, 'success');
+                const pointsEarned = addPoints(calculatePoints(distance, currentMode));
+                showStatus(`${translations[currentLanguage].goalReached} ${translations[currentLanguage].pointsEarned} ${pointsEarned}!`, 'success');
                 reportSection.classList.remove('hidden');
                 stopJourneyTimer();
                 
                 // Сохраняем время пути для истории
                 const journeyTimeFormatted = timerDisplay.textContent;
                 localStorage.setItem('lastJourneyTime', journeyTimeFormatted);
+                localStorage.setItem('lastPointsEarned', pointsEarned);
             } else {
                 showStatus(`${translations[currentLanguage].notReached}. ${translations[currentLanguage].distanceToTarget} ${Math.round(distance)}${translations[currentLanguage].meters}`, 'error');
             }
         }
 
         function completeJourney() {
+            if (!userLocation || !targetLocation) return;
+            
+            const distance = calculateDistance(userLocation, targetLocation);
+            const pointsEarned = addPoints(calculatePoints(distance, currentMode));
+            
             stopJourneyTimer();
             timerSection.classList.add('hidden');
             reportSection.classList.remove('hidden');
-            showStatus(translations[currentLanguage].journeyCompleted, 'success');
+            showStatus(`${translations[currentLanguage].journeyCompleted} ${translations[currentLanguage].pointsEarned} ${pointsEarned}!`, 'success');
             
             // Сохраняем время пути для истории
             const journeyTimeFormatted = timerDisplay.textContent;
             localStorage.setItem('lastJourneyTime', journeyTimeFormatted);
+            localStorage.setItem('lastPointsEarned', pointsEarned);
         }
 
         function cancelJourney() {
@@ -1251,8 +1379,9 @@
                 photoHTML = `<img src="${currentPhoto}" class="history-photo" alt="Фото отчета">`;
             }
             
-            // Получаем сохраненное время пути
+            // Получаем сохраненное время пути и баллы
             const journeyTimeFormatted = localStorage.getItem('lastJourneyTime') || timerDisplay.textContent;
+            const pointsEarned = localStorage.getItem('lastPointsEarned') || 0;
             
             historyItem.innerHTML = `
                 <div class="history-date">${dateString} <span class="mode-indicator ${modeClass}">${modeText}</span></div>
@@ -1260,6 +1389,7 @@
                 <div class="history-time">${translations[currentLanguage].journeyTime} ${journeyTimeFormatted}</div>
                 <div class="history-report">${report}</div>
                 ${photoHTML}
+                <div class="history-points">+${pointsEarned} баллов</div>
             `;
             
             historyList.prepend(historyItem);
