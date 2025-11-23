@@ -67,7 +67,7 @@
             gap: 10px;
         }
         
-        .theme-toggle, .language-toggle {
+        .theme-toggle, .language-toggle, .map-style-toggle {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -77,7 +77,7 @@
             transition: all 0.2s;
         }
         
-        .theme-toggle:hover, .language-toggle:hover {
+        .theme-toggle:hover, .language-toggle:hover, .map-style-toggle:hover {
             background: var(--primary);
             color: white;
         }
@@ -118,6 +118,69 @@
         #map {
             height: 500px;
             width: 100%;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .map-control-btn {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .map-control-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .map-style-selector {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            z-index: 1000;
+            background: var(--surface-color);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: var(--shadow);
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            width: 150px;
+        }
+        
+        .map-style-selector.active {
+            display: flex;
+        }
+        
+        .map-style-option {
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .map-style-option:hover {
+            background: var(--bg-color);
+        }
+        
+        .map-style-option.active {
+            background-color: var(--primary);
+            color: white;
         }
         
         .controls-section {
@@ -500,6 +563,7 @@
             <div class="header-controls">
                 <button class="theme-toggle" id="themeToggle">🌙</button>
                 <button class="language-toggle" id="languageToggle">EN</button>
+                <button class="map-style-toggle" id="mapStyleToggle">🗺️ Стиль карты</button>
             </div>
             <h1 data-lang="title">Туда-Сюда</h1>
             <p class="tagline" data-lang="tagline">Открой для себя новые места. Достигай случайных точек и делись впечатлениями.</p>
@@ -512,6 +576,18 @@
                     <div class="loading-text" data-lang="loading">Ищем интересное место...</div>
                 </div>
                 <div id="map"></div>
+                <div class="map-controls">
+                    <button class="map-control-btn" id="zoomInBtn">+</button>
+                    <button class="map-control-btn" id="zoomOutBtn">-</button>
+                    <button class="map-control-btn" id="locateUserBtn">📍</button>
+                </div>
+                <div class="map-style-selector" id="mapStyleSelector">
+                    <div class="map-style-option active" data-style="osm">Стандартная</div>
+                    <div class="map-style-option" data-style="satellite">Спутник</div>
+                    <div class="map-style-option" data-style="dark">Темная</div>
+                    <div class="map-style-option" data-style="terrain">Рельеф</div>
+                    <div class="map-style-option" data-style="minimal">Минимальная</div>
+                </div>
             </section>
             
             <section class="controls-section">
@@ -722,6 +798,35 @@
             }
         };
 
+        // Настройки стилей карты
+        const mapStyles = {
+            osm: {
+                name: "Стандартная",
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            },
+            satellite: {
+                name: "Спутник",
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            },
+            dark: {
+                name: "Темная",
+                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            },
+            terrain: {
+                name: "Рельеф",
+                url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+            },
+            minimal: {
+                name: "Минимальная",
+                url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }
+        };
+
         // Переменные для хранения данных
         let userLocation = null;
         let userMarker = null;
@@ -739,6 +844,8 @@
         let journeyTime = 0;
         let currentPhoto = null;
         let map = null;
+        let currentMapStyle = 'osm';
+        let mapLayer = null;
 
         // Локальные файлы
         const userPhoto = 'me.png';
@@ -775,6 +882,12 @@
         const photoInput = document.getElementById('photoInput');
         const addPhotoBtn = document.getElementById('addPhotoBtn');
         const photoPreview = document.getElementById('photoPreview');
+        const mapStyleToggle = document.getElementById('mapStyleToggle');
+        const mapStyleSelector = document.getElementById('mapStyleSelector');
+        const mapStyleOptions = document.querySelectorAll('.map-style-option');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const locateUserBtn = document.getElementById('locateUserBtn');
 
         // Инициализация
         function init() {
@@ -788,9 +901,32 @@
 
         function initMap() {
             map = L.map('map').setView([55.7558, 37.6173], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            updateMapStyle();
+            
+            // Добавляем контролы масштабирования
+            L.control.zoom({
+                position: 'bottomright'
             }).addTo(map);
+        }
+
+        function updateMapStyle() {
+            if (mapLayer) {
+                map.removeLayer(mapLayer);
+            }
+            
+            const style = mapStyles[currentMapStyle];
+            mapLayer = L.tileLayer(style.url, {
+                attribution: style.attribution
+            }).addTo(map);
+            
+            // Обновляем активный стиль в селекторе
+            mapStyleOptions.forEach(option => {
+                if (option.dataset.style === currentMapStyle) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
         }
 
         function setupEventListeners() {
@@ -818,6 +954,24 @@
             // Фото
             addPhotoBtn.addEventListener('click', () => photoInput.click());
             photoInput.addEventListener('change', handlePhotoUpload);
+            
+            // Стили карты
+            mapStyleToggle.addEventListener('click', toggleMapStyleSelector);
+            mapStyleOptions.forEach(option => {
+                option.addEventListener('click', () => setMapStyle(option.dataset.style));
+            });
+            
+            // Управление картой
+            zoomInBtn.addEventListener('click', () => map.zoomIn());
+            zoomOutBtn.addEventListener('click', () => map.zoomOut());
+            locateUserBtn.addEventListener('click', locateUser);
+            
+            // Закрытие селектора стилей при клике вне его
+            document.addEventListener('click', (e) => {
+                if (!mapStyleSelector.contains(e.target) && e.target !== mapStyleToggle) {
+                    mapStyleSelector.classList.remove('active');
+                }
+            });
         }
 
         // Система перевода
@@ -841,7 +995,8 @@
             const settings = {
                 language: currentLanguage,
                 theme: currentTheme,
-                soundEnabled: soundEnabled
+                soundEnabled: soundEnabled,
+                mapStyle: currentMapStyle
             };
             localStorage.setItem('appSettings', JSON.stringify(settings));
         }
@@ -853,6 +1008,7 @@
                 currentLanguage = settings.language || 'ru';
                 currentTheme = settings.theme || 'light';
                 soundEnabled = settings.soundEnabled !== false;
+                currentMapStyle = settings.mapStyle || 'osm';
             }
             updateSoundIndicator();
         }
@@ -945,7 +1101,7 @@
                         radius: checkInRadius
                     }).addTo(map);
                     
-                    const group = new L.featureGroup([targetMarker]);
+                    const group = new L.featureGroup([userMarker, targetMarker]);
                     map.fitBounds(group.getBounds().pad(0.1));
                     
                     updateDistance();
@@ -1235,6 +1391,25 @@
             soundEnabled = !soundEnabled;
             updateSoundIndicator();
             saveSettings();
+        }
+
+        function toggleMapStyleSelector() {
+            mapStyleSelector.classList.toggle('active');
+        }
+
+        function setMapStyle(style) {
+            currentMapStyle = style;
+            updateMapStyle();
+            mapStyleSelector.classList.remove('active');
+            saveSettings();
+        }
+
+        function locateUser() {
+            if (userLocation) {
+                map.setView([userLocation.lat, userLocation.lng], 15);
+            } else {
+                showStatus('Сначала определите ваше местоположение', 'error');
+            }
         }
 
         function showLoadingScreen(animate) {
