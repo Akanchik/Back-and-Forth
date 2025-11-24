@@ -239,6 +239,42 @@
             opacity: 0.8;
         }
         
+        .power-mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .power-mode-option {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface-color);
+        }
+        
+        .power-mode-option:hover {
+            background: var(--bg-color);
+        }
+        
+        .power-mode-option.active {
+            background-color: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .power-mode-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .power-mode-description {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
         .button {
             background: var(--primary);
             color: white;
@@ -517,6 +553,21 @@
             background: #f3e8ff;
             color: #7c3aed;
         }
+        
+        .power-mode-attractors {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .power-mode-voids {
+            background: #fce7f3;
+            color: #be185d;
+        }
+        
+        .power-mode-anomalies {
+            background: #fef3c7;
+            color: #d97706;
+        }
 
         .sound-indicator {
             margin-top: 10px;
@@ -690,6 +741,26 @@
                         </div>
                     </div>
                     
+                    <h2 data-lang="powerModeTitle">Режимы мощности</h2>
+                    <div class="power-mode-selector">
+                        <div class="power-mode-option active" data-power-mode="random">
+                            <div class="power-mode-title" data-lang="powerModeRandom">Случайный</div>
+                            <div class="power-mode-description" data-lang="powerModeRandomDesc">Обычные случайные точки</div>
+                        </div>
+                        <div class="power-mode-option" data-power-mode="attractors">
+                            <div class="power-mode-title" data-lang="powerModeAttractors">Аттракторы</div>
+                            <div class="power-mode-description" data-lang="powerModeAttractorsDesc">Точки с повышенной активностью</div>
+                        </div>
+                        <div class="power-mode-option" data-power-mode="voids">
+                            <div class="power-mode-title" data-lang="powerModeVoids">Войды</div>
+                            <div class="power-mode-description" data-lang="powerModeVoidsDesc">Точки с пониженной активностью</div>
+                        </div>
+                        <div class="power-mode-option" data-power-mode="anomalies">
+                            <div class="power-mode-title" data-lang="powerModeAnomalies">Аномалии</div>
+                            <div class="power-mode-description" data-lang="powerModeAnomaliesDesc">Необычные и странные места</div>
+                        </div>
+                    </div>
+                    
                     <button id="getLocationBtn" class="button" data-lang="getLocation">Определить мое местоположение</button>
                     <button id="startTrackingBtn" class="button button-success hidden" data-lang="startTracking">Начать отслеживание</button>
                     <button id="stopTrackingBtn" class="button button-danger hidden" data-lang="stopTracking">Остановить отслеживание</button>
@@ -721,6 +792,7 @@
                         <div id="targetCoords" class="coordinates" data-lang="notGenerated">Не сгенерирована</div>
                         <div id="distanceInfo" class="distance"></div>
                         <div id="modeInfo"></div>
+                        <div id="powerModeInfo"></div>
                     </div>
                     
                     <div id="statusMessage" class="status-message hidden"></div>
@@ -774,6 +846,15 @@
                 modeAdultsDesc: "Средние расстояния, интересные локации",
                 modeTravelers: "Для путешественников",
                 modeTravelersDesc: "Дальние расстояния, уникальные места",
+                powerModeTitle: "Режимы мощности",
+                powerModeRandom: "Случайный",
+                powerModeRandomDesc: "Обычные случайные точки",
+                powerModeAttractors: "Аттракторы",
+                powerModeAttractorsDesc: "Точки с повышенной активностью",
+                powerModeVoids: "Войды",
+                powerModeVoidsDesc: "Точки с пониженной активностью",
+                powerModeAnomalies: "Аномалии",
+                powerModeAnomaliesDesc: "Необычные и странные места",
                 getLocation: "Определить мое местоположение",
                 startTracking: "Начать отслеживание",
                 stopTracking: "Остановить отслеживание",
@@ -831,6 +912,15 @@
                 modeAdultsDesc: "Medium distances, interesting locations",
                 modeTravelers: "For Travelers",
                 modeTravelersDesc: "Long distances, unique places",
+                powerModeTitle: "Power Modes",
+                powerModeRandom: "Random",
+                powerModeRandomDesc: "Regular random points",
+                powerModeAttractors: "Attractors",
+                powerModeAttractorsDesc: "Points with increased activity",
+                powerModeVoids: "Voids",
+                powerModeVoidsDesc: "Points with decreased activity",
+                powerModeAnomalies: "Anomalies",
+                powerModeAnomaliesDesc: "Unusual and strange places",
                 getLocation: "Get My Location",
                 startTracking: "Start Tracking",
                 stopTracking: "Stop Tracking",
@@ -902,6 +992,30 @@
             }
         };
 
+        // Настройки режимов мощности
+        const powerModeSettings = {
+            random: {
+                description: "Случайная точка",
+                pointMultiplier: 1.0,
+                color: "#986CFF"
+            },
+            attractors: {
+                description: "Точка-аттрактор с повышенной активностью",
+                pointMultiplier: 1.5,
+                color: "#10b981"
+            },
+            voids: {
+                description: "Точка-войд с пониженной активностью", 
+                pointMultiplier: 2.0,
+                color: "#8b5cf6"
+            },
+            anomalies: {
+                description: "Аномальная точка с необычными характеристиками",
+                pointMultiplier: 2.5,
+                color: "#f59e0b"
+            }
+        };
+
         // Переменные для хранения данных
         let userLocation = null;
         let userMarker = null;
@@ -909,6 +1023,7 @@
         let targetMarker = null;
         let distanceCircle = null;
         let currentMode = 'kids';
+        let currentPowerMode = 'random';
         let checkInRadius = modeSettings.kids.checkInRadius;
         let lastSoundTime = 0;
         let soundEnabled = true;
@@ -944,6 +1059,7 @@
         const targetCoordsElement = document.getElementById('targetCoords');
         const distanceInfoElement = document.getElementById('distanceInfo');
         const modeInfoElement = document.getElementById('modeInfo');
+        const powerModeInfoElement = document.getElementById('powerModeInfo');
         const statusMessageElement = document.getElementById('statusMessage');
         const reportSection = document.getElementById('reportSection');
         const reportText = document.getElementById('reportText');
@@ -952,6 +1068,7 @@
         const loadingScreen = document.getElementById('loadingScreen');
         const loadingIcon = document.getElementById('loadingIcon');
         const modeOptions = document.querySelectorAll('.mode-option');
+        const powerModeOptions = document.querySelectorAll('.power-mode-option');
         const distanceSound = document.getElementById('distanceSound');
         const soundIndicator = document.getElementById('soundIndicator');
         const clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -1047,6 +1164,11 @@
                 option.addEventListener('click', () => setMode(option.dataset.mode));
             });
             
+            // Режимы мощности
+            powerModeOptions.forEach(option => {
+                option.addEventListener('click', () => setPowerMode(option.dataset.powerMode));
+            });
+            
             // Фото
             addPhotoBtn.addEventListener('click', () => photoInput.click());
             photoInput.addEventListener('change', handlePhotoUpload);
@@ -1097,19 +1219,20 @@
             localStorage.setItem('userPoints', userPoints.toString());
         }
 
-        function calculatePoints(distance, mode) {
+        function calculatePoints(distance, mode, powerMode) {
             const basePoints = modeSettings[mode].basePoints;
             const maxDistance = modeSettings[mode].checkInRadius;
+            const multiplier = powerModeSettings[powerMode].pointMultiplier;
             
             // Чем ближе к цели, тем больше баллов
             // Если расстояние меньше радиуса проверки, получаем максимальные баллы
             if (distance <= maxDistance) {
-                return basePoints;
+                return Math.round(basePoints * multiplier);
             }
             
             // Если дальше, то баллы уменьшаются пропорционально
             const distanceFactor = Math.max(0, 1 - (distance - maxDistance) / 1000);
-            return Math.round(basePoints * distanceFactor);
+            return Math.round(basePoints * distanceFactor * multiplier);
         }
 
         function addPoints(points) {
@@ -1129,7 +1252,8 @@
                 language: currentLanguage,
                 theme: currentTheme,
                 soundEnabled: soundEnabled,
-                mapStyle: currentMapStyle
+                mapStyle: currentMapStyle,
+                powerMode: currentPowerMode
             };
             localStorage.setItem('appSettings', JSON.stringify(settings));
         }
@@ -1142,6 +1266,16 @@
                 currentTheme = settings.theme || 'light';
                 soundEnabled = settings.soundEnabled !== false;
                 currentMapStyle = settings.mapStyle || 'vector';
+                currentPowerMode = settings.powerMode || 'random';
+                
+                // Активируем выбранный режим мощности
+                powerModeOptions.forEach(option => {
+                    if (option.dataset.powerMode === currentPowerMode) {
+                        option.classList.add('active');
+                    } else {
+                        option.classList.remove('active');
+                    }
+                });
             }
             updateSoundIndicator();
         }
@@ -1163,14 +1297,34 @@
                         // Показываем кнопку для начала отслеживания
                         startTrackingBtn.classList.remove('hidden');
                         getLocationBtn.classList.add('hidden');
+                        
+                        // Центрируем карту на пользователе
+                        if (map && userLocation) {
+                            map.setCenter([userLocation.lat, userLocation.lng], 15);
+                        }
                     },
                     error => {
-                        showStatus('Ошибка определения местоположения: ' + error.message, 'error');
+                        let errorMessage = 'Ошибка определения местоположения: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += "Пользователь отказал в доступе к геолокации";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += "Информация о местоположении недоступна";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += "Время ожидания истекло";
+                                break;
+                            default:
+                                errorMessage += "Неизвестная ошибка";
+                                break;
+                        }
+                        showStatus(errorMessage, 'error');
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10,
-                        maximumAge: 0
+                        timeout: 10000, // Увеличиваем до 10 секунд
+                        maximumAge: 60000 // Кэшируем на 1 минуту
                     }
                 );
             } else {
@@ -1266,7 +1420,7 @@
                 
                 setTimeout(() => {
                     const radius = modeSettings[currentMode].radius;
-                    const randomPoint = generateRandomPoint(userLocation, radius);
+                    const randomPoint = generatePowerModePoint(userLocation, radius, currentPowerMode);
                     
                     targetLocation = randomPoint;
                     hideLoadingScreen();
@@ -1278,17 +1432,20 @@
                         map.geoObjects.remove(targetMarker);
                     }
                     
+                    const powerModeColor = powerModeSettings[currentPowerMode].color;
+                    
                     targetMarker = new ymaps.Placemark(
                         [targetLocation.lat, targetLocation.lng],
                         {
                             hintContent: 'Целевая точка',
-                            balloonContent: 'Ваша цель!'
+                            balloonContent: `Ваша цель! (${powerModeSettings[currentPowerMode].description})`
                         },
                         {
                             iconLayout: 'default#image',
                             iconImageHref: targetPhoto,
                             iconImageSize: [75, 75],
-                            iconImageOffset: [-37, -37]
+                            iconImageOffset: [-37, -37],
+                            iconImageClipRect: [[0, 0], [75, 75]]
                         }
                     );
                     
@@ -1303,37 +1460,73 @@
                         [targetLocation.lat, targetLocation.lng],
                         checkInRadius
                     ], {}, {
-                        fillColor: "rgba(139, 92, 246, 0.1)",
-                        strokeColor: "#8b5cf6",
+                        fillColor: powerModeColor + "20",
+                        strokeColor: powerModeColor,
                         strokeOpacity: 0.8,
                         strokeWidth: 2
                     });
                     
                     map.geoObjects.add(distanceCircle);
                     
-                    // Устанавливаем границы отображения
-                    map.setBounds([
-                        [userLocation.lat, userLocation.lng],
-                        [targetLocation.lat, targetLocation.lng]
-                    ], {
-                        checkZoomRange: true
+                    // Устанавливаем границы отображения, чтобы показать обе точки
+                    const bounds = [
+                        [Math.min(userLocation.lat, targetLocation.lat) - 0.001, Math.min(userLocation.lng, targetLocation.lng) - 0.001],
+                        [Math.max(userLocation.lat, targetLocation.lat) + 0.001, Math.max(userLocation.lng, targetLocation.lng) + 0.001]
+                    ];
+                    
+                    map.setBounds(bounds, {
+                        checkZoomRange: true,
+                        zoomMargin: 50
                     });
                     
                     updateDistance();
                     updateModeInfo();
+                    updatePowerModeInfo();
                     
                     startJourneyBtn.classList.remove('hidden');
                     newPointBtn.classList.remove('hidden');
                     
                     showStatus(translations[currentLanguage].destinationFound, 'success');
                 }, 500);
-            }, 3000);
+            }, 2000);
         }
 
-        function generateRandomPoint(center, radiusKm) {
+        function generatePowerModePoint(center, radiusKm, powerMode) {
             const radiusDeg = radiusKm / 111;
-            const angle = Math.random() * 2 * Math.PI;
-            const distance = Math.random() * radiusDeg;
+            
+            // Базовая случайная точка
+            let angle = Math.random() * 2 * Math.PI;
+            let distance = Math.random() * radiusDeg;
+            
+            // Модификации для разных режимов мощности
+            switch(powerMode) {
+                case 'attractors':
+                    // Аттракторы - точки ближе к центрам активности (города, достопримечательности)
+                    distance = distance * 0.7; // Ближе к центру
+                    angle += (Math.random() - 0.5) * 0.5; // Небольшое смещение
+                    break;
+                    
+                case 'voids':
+                    // Войды - точки дальше от центров активности
+                    distance = radiusDeg * 0.3 + distance * 0.7; // Дальше от центра
+                    angle += (Math.random() - 0.5) * 1.0; // Большее смещение
+                    break;
+                    
+                case 'anomalies':
+                    // Аномалии - необычное распределение
+                    if (Math.random() > 0.7) {
+                        distance = distance * 0.3; // Иногда очень близко
+                    } else {
+                        distance = radiusDeg * 0.8 + distance * 0.2; // Иногда очень далеко
+                    }
+                    angle += (Math.random() - 0.5) * 2.0; // Сильное смещение
+                    break;
+                    
+                case 'random':
+                default:
+                    // Случайный режим - равномерное распределение
+                    break;
+            }
             
             const lat = center.lat + (distance * Math.cos(angle));
             const lng = center.lng + (distance * Math.sin(angle));
@@ -1380,7 +1573,7 @@
             const distance = calculateDistance(userLocation, targetLocation);
             
             if (distance <= checkInRadius) {
-                const pointsEarned = addPoints(calculatePoints(distance, currentMode));
+                const pointsEarned = addPoints(calculatePoints(distance, currentMode, currentPowerMode));
                 showStatus(`${translations[currentLanguage].goalReached} ${translations[currentLanguage].pointsEarned} ${pointsEarned}!`, 'success');
                 reportSection.classList.remove('hidden');
                 stopJourneyTimer();
@@ -1398,7 +1591,7 @@
             if (!userLocation || !targetLocation) return;
             
             const distance = calculateDistance(userLocation, targetLocation);
-            const pointsEarned = addPoints(calculatePoints(distance, currentMode));
+            const pointsEarned = addPoints(calculatePoints(distance, currentMode, currentPowerMode));
             
             stopJourneyTimer();
             timerSection.classList.add('hidden');
@@ -1423,6 +1616,7 @@
             targetCoordsElement.textContent = translations[currentLanguage].notGenerated;
             distanceInfoElement.textContent = '';
             modeInfoElement.textContent = '';
+            powerModeInfoElement.textContent = '';
             
             if (targetMarker) {
                 map.geoObjects.remove(targetMarker);
@@ -1475,6 +1669,26 @@
                     break;
             }
             
+            let powerModeClass = '';
+            let powerModeText = '';
+            switch(currentPowerMode) {
+                case 'attractors':
+                    powerModeClass = 'power-mode-attractors';
+                    powerModeText = translations[currentLanguage].powerModeAttractors;
+                    break;
+                case 'voids':
+                    powerModeClass = 'power-mode-voids';
+                    powerModeText = translations[currentLanguage].powerModeVoids;
+                    break;
+                case 'anomalies':
+                    powerModeClass = 'power-mode-anomalies';
+                    powerModeText = translations[currentLanguage].powerModeAnomalies;
+                    break;
+                default:
+                    powerModeClass = 'mode-adults';
+                    powerModeText = translations[currentLanguage].powerModeRandom;
+            }
+            
             let photoHTML = '';
             if (currentPhoto) {
                 photoHTML = `<img src="${currentPhoto}" class="history-photo" alt="Фото отчета">`;
@@ -1485,7 +1699,10 @@
             const pointsEarned = localStorage.getItem('lastPointsEarned') || 0;
             
             historyItem.innerHTML = `
-                <div class="history-date">${dateString} <span class="mode-indicator ${modeClass}">${modeText}</span></div>
+                <div class="history-date">${dateString} 
+                    <span class="mode-indicator ${modeClass}">${modeText}</span>
+                    <span class="mode-indicator ${powerModeClass}">${powerModeText}</span>
+                </div>
                 <div class="history-coords">${targetLocation.lat.toFixed(4)}° с.ш., ${targetLocation.lng.toFixed(4)}° в.д.</div>
                 <div class="history-time">${translations[currentLanguage].journeyTime} ${journeyTimeFormatted}</div>
                 <div class="history-report">${report}</div>
@@ -1580,6 +1797,14 @@
             updateModeInfo();
         }
 
+        function setPowerMode(powerMode) {
+            powerModeOptions.forEach(opt => opt.classList.remove('active'));
+            document.querySelector(`.power-mode-option[data-power-mode="${powerMode}"]`).classList.add('active');
+            currentPowerMode = powerMode;
+            updatePowerModeInfo();
+            saveSettings();
+        }
+
         function updateModeInfo() {
             if (!targetLocation) return;
             
@@ -1601,6 +1826,32 @@
             }
             
             modeInfoElement.innerHTML = `<span class="mode-indicator ${modeClass}">${modeText}</span>`;
+        }
+
+        function updatePowerModeInfo() {
+            if (!targetLocation) return;
+            
+            let powerModeText = '';
+            let powerModeClass = '';
+            switch(currentPowerMode) {
+                case 'attractors':
+                    powerModeText = translations[currentLanguage].powerModeAttractors + ' • x1.5 очков';
+                    powerModeClass = 'power-mode-attractors';
+                    break;
+                case 'voids':
+                    powerModeText = translations[currentLanguage].powerModeVoids + ' • x2.0 очков';
+                    powerModeClass = 'power-mode-voids';
+                    break;
+                case 'anomalies':
+                    powerModeText = translations[currentLanguage].powerModeAnomalies + ' • x2.5 очков';
+                    powerModeClass = 'power-mode-anomalies';
+                    break;
+                default:
+                    powerModeText = translations[currentLanguage].powerModeRandom + ' • x1.0 очков';
+                    powerModeClass = 'mode-adults';
+            }
+            
+            powerModeInfoElement.innerHTML = `<span class="mode-indicator ${powerModeClass}">${powerModeText}</span>`;
         }
 
         function toggleTheme() {
@@ -1637,8 +1888,10 @@
         function locateUser() {
             if (userLocation) {
                 map.setCenter([userLocation.lat, userLocation.lng], 15);
+                showStatus('Карта центрирована на вашем местоположении', 'info');
             } else {
                 showStatus('Сначала определите ваше местоположение', 'error');
+                getCurrentLocation(); // Автоматически пытаемся определить местоположение
             }
         }
 
@@ -1722,4 +1975,3 @@
     </script>
 </body>
 </html>
-
