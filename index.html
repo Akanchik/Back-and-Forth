@@ -998,22 +998,26 @@
             random: {
                 description: "Случайная точка",
                 pointMultiplier: 1.0,
-                color: "#986CFF"
+                color: "#986CFF",
+                icon: "placeyellow.png"  // Желтая метка для случайного режима
             },
             attractors: {
                 description: "Точка-аттрактор с повышенной активностью",
                 pointMultiplier: 1.5,
-                color: "#10b981"
+                color: "#10b981",
+                icon: "placegreen.png"   // Зеленая метка для аттракторов
             },
             voids: {
                 description: "Точка-войд с пониженной активностью", 
                 pointMultiplier: 2.0,
-                color: "#8b5cf6"
+                color: "#8b5cf6",
+                icon: "placeblue.png"    // Синяя метка для войдов
             },
             anomalies: {
                 description: "Аномальная точка с необычными характеристиками",
                 pointMultiplier: 2.5,
-                color: "#f59e0b"
+                color: "#f59e0b",
+                icon: "placered.png"     // Красная метка для аномалий
             }
         };
 
@@ -1040,9 +1044,14 @@
         let locationWatchId = null;
         let isTracking = false;
 
-        // Локальные файлы - ОСТАВЛЯЕМ КАК БЫЛО
+        // Локальные файлы - ОБНОВЛЕННЫЕ ПУТИ К МЕТКАМ
         const userPhoto = 'me.png';
-        const targetPhoto = 'place.png';
+        const targetPhotos = {
+            random: 'placeyellow.png',
+            attractors: 'placegreen.png', 
+            voids: 'placeblue.png',
+            anomalies: 'placered.png'
+        };
         const loadingPhoto = 'place.png';
         const pointsPhoto = 'place.png';
 
@@ -1434,23 +1443,9 @@
                     }
                     
                     const powerModeColor = powerModeSettings[currentPowerMode].color;
+                    const targetIcon = targetPhotos[currentPowerMode];
                     
-                    // Используем стандартные иконки Яндекс.Карт для целевой точки с цветами режимов
-                    let preset;
-                    switch(currentPowerMode) {
-                        case 'attractors':
-                            preset = 'islands#greenIcon';
-                            break;
-                        case 'voids':
-                            preset = 'islands#darkBlueIcon';
-                            break;
-                        case 'anomalies':
-                            preset = 'islands#orangeIcon';
-                            break;
-                        default:
-                            preset = 'islands#violetIcon';
-                    }
-                    
+                    // Используем кастомные иконки для целевой точки
                     targetMarker = new ymaps.Placemark(
                         [targetLocation.lat, targetLocation.lng],
                         {
@@ -1458,8 +1453,10 @@
                             balloonContent: `Ваша цель! (${powerModeSettings[currentPowerMode].description})`
                         },
                         {
-                            preset: preset,
-                            iconColor: powerModeColor
+                            iconLayout: 'default#image',
+                            iconImageHref: targetIcon,
+                            iconImageSize: [50, 50],
+                            iconImageOffset: [-25, -25]
                         }
                     );
                     
@@ -1783,16 +1780,20 @@
             const now = Date.now();
             const timeSinceLastSound = now - lastSoundTime;
             
-            let minInterval = 500;
-            let maxInterval = 10000;
+            // Улучшенная система звука: чем ближе к цели, тем чаще звук
+            let minInterval = 300;  // Минимальный интервал (очень близко)
+            let maxInterval = 15000; // Максимальный интервал (очень далеко)
             
             let targetInterval;
             if (distance <= checkInRadius) {
+                // В зоне прибытия - звук очень часто
                 targetInterval = minInterval;
-            } else if (distance >= 1000) {
+            } else if (distance >= 5000) {
+                // Очень далеко - звук редко
                 targetInterval = maxInterval;
             } else {
-                const progress = (distance - checkInRadius) / (1000 - checkInRadius);
+                // Плавное изменение интервала между minInterval и maxInterval
+                const progress = Math.min(1, (distance - checkInRadius) / (5000 - checkInRadius));
                 targetInterval = minInterval + progress * (maxInterval - minInterval);
             }
             
