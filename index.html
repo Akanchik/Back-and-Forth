@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Туда-Сюда</title>
     <style>
+        /* Все стили остаются без изменений */
         * {
             margin: 0;
             padding: 0;
@@ -1039,7 +1040,7 @@
         let locationWatchId = null;
         let isTracking = false;
 
-        // Локальные файлы
+        // Локальные файлы - ОСТАВЛЯЕМ КАК БЫЛО
         const userPhoto = 'me.png';
         const targetPhoto = 'place.png';
         const loadingPhoto = 'place.png';
@@ -1381,7 +1382,7 @@
             // Обновляем координаты в интерфейсе
             userCoordsElement.textContent = `${userLocation.lat.toFixed(6)}° с.ш., ${userLocation.lng.toFixed(6)}° в.д.`;
             
-            // Обновляем маркер на карте
+            // Обновляем маркер на карте - ОСТАВЛЯЕМ ЛОКАЛЬНЫЙ ФАЙЛ
             if (userMarker) {
                 userMarker.geometry.setCoordinates([userLocation.lat, userLocation.lng]);
             } else {
@@ -1434,6 +1435,22 @@
                     
                     const powerModeColor = powerModeSettings[currentPowerMode].color;
                     
+                    // Используем стандартные иконки Яндекс.Карт для целевой точки с цветами режимов
+                    let preset;
+                    switch(currentPowerMode) {
+                        case 'attractors':
+                            preset = 'islands#greenIcon';
+                            break;
+                        case 'voids':
+                            preset = 'islands#darkBlueIcon';
+                            break;
+                        case 'anomalies':
+                            preset = 'islands#orangeIcon';
+                            break;
+                        default:
+                            preset = 'islands#violetIcon';
+                    }
+                    
                     targetMarker = new ymaps.Placemark(
                         [targetLocation.lat, targetLocation.lng],
                         {
@@ -1441,11 +1458,8 @@
                             balloonContent: `Ваша цель! (${powerModeSettings[currentPowerMode].description})`
                         },
                         {
-                            iconLayout: 'default#image',
-                            iconImageHref: targetPhoto,
-                            iconImageSize: [75, 75],
-                            iconImageOffset: [-37, -37],
-                            iconImageClipRect: [[0, 0], [75, 75]]
+                            preset: preset,
+                            iconColor: powerModeColor
                         }
                     );
                     
