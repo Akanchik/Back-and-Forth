@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Туда-Сюда - Предупреждение</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+        
+        .welcome-content {
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .warning-icon {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        .welcome-title {
+            font-size: 2.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #986CFF;
+            text-shadow: 0 2px 10px rgba(152, 108, 255, 0.5);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .warnings-list {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: left;
+            border: 1px solid rgba(152, 108, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .warning-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .warning-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .warning-number {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: black;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 50%;
+            margin-right: 20px;
+            min-width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        
+        .warning-text {
+            flex: 1;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .warning-text strong {
+            color: #f59e0b;
+        }
+        
+        .agreement-section {
+            background: rgba(152, 108, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 1px solid rgba(152, 108, 255, 0.3);
+        }
+        
+        .agreement-checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #986CFF;
+        }
+        
+        .checkbox-label {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-align: left;
+            flex: 1;
+        }
+        
+        .start-button {
+            background: linear-gradient(135deg, #986CFF 0%, #6D51AB 100%);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(152, 108, 255, 0.4);
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(152, 108, 255, 0.6);
+        }
+        
+        .start-button:active {
+            transform: translateY(1px);
+        }
+        
+        .start-button:disabled {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+        
+        .footer-note {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            line-height: 1.5;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-content">
+        <img src="iconred.png" alt="Предупреждение" class="warning-icon">
+        
+        <h1 class="welcome-title">Туда-Сюда</h1>
+        <p class="tagline">Приложение для исследователей и любителей приключений</p>
+        
+        <div class="warnings-list">
+            <div class="warning-item">
+                <div class="warning-number">1</div>
+                <div class="warning-text">
+                    <strong>Безопасность прежде всего!</strong> Всегда следите за окружающей обстановкой, особенно при движении по незнакомым маршрутам.
+                </div>
+            </div>
+            
+            <div class="warning-item">
+                <div class="warning-number">2</div>
+                <div class="warning-text">
+                    <strong>Не нарушайте закон.</strong> Не заходите на частные территории, заповедные зоны и другие охраняемые объекты.
+                </div>
+            </div>
+            
+            <div class="warning-item">
+                <div class="warning-number">3</div>
+                <div class="warning-text">
+                    <strong>Берегите природу.</strong> Не оставляйте мусор, не повреждайте растения и не беспокойте животных.
+                </div>
+            </div>
+            
+            <div class="warning-item">
+                <div class="warning-number">4</div>
+                <div class="warning-text">
+                    <strong>Сообщите о планах.</strong> Расскажите кому-то о вашем маршруте и планируемом времени возвращения.
+                </div>
+            </div>
+            
+            <div class="warning-item">
+                <div class="warning-number">5</div>
+                <div class="warning-text">
+                    <strong>Возьмите необходимое.</strong> Вода, заряженный телефон, карта и аптечка должны быть с вами.
+                </div>
+            </div>
+        </div>
+        
+        <div class="agreement-section">
+            <div class="agreement-checkbox">
+                <input type="checkbox" id="agreeCheckbox" class="checkbox">
+                <label for="agreeCheckbox" class="checkbox-label">
+                    Я прочитал(а) и понимаю правила безопасности. Принимаю полную ответственность за свои действия.
+                </label>
+            </div>
+            
+            <button id="startButton" class="start-button" disabled>
+                Начать приключение
+            </button>
+        </div>
+        
+        <p class="footer-note">
+            Приложение генерирует случайные точки для исследования. <br>
+            Все решения о маршрутах принимаются пользователем самостоятельно.
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('agreeCheckbox');
+            const startButton = document.getElementById('startButton');
+            
+            // Проверяем, не показывалась ли уже welcome страница
+            if (localStorage.getItem('welcomeShown') === 'true') {
+                // Если уже показывалась - сразу переходим к основному приложению
+                window.location.href = 'main.html';
+                return;
+            }
+            
+            // Обновляем состояние кнопки при изменении чекбокса
+            checkbox.addEventListener('change', function() {
+                startButton.disabled = !checkbox.checked;
+            });
+            
+            // Обработка нажатия на кнопку
+            startButton.addEventListener('click', function() {
+                // Сохраняем в localStorage, что welcome страница была показана
+                localStorage.setItem('welcomeShown', 'true');
+                
+                // Переходим к основному приложению
+                window.location.href = 'main.html';
+            });
+            
+            // Для мобильных устройств добавляем дополнительные предупреждения
+            if (/Mobi|Android/i.test(navigator.userAgent)) {
+                const warningsList = document.querySelector('.warnings-list');
+                const mobileWarning = document.createElement('div');
+                mobileWarning.className = 'warning-item';
+                mobileWarning.innerHTML = `
+                    <div class="warning-number">!</div>
+                    <div class="warning-text">
+                        <strong>Используйте приложение на мобильном устройстве с осторожностью.</strong> Не отвлекайтесь на телефон во время движения.
+                    </div>
+                `;
+                warningsList.appendChild(mobileWarning);
+            }
+        });
+    </script>
+</body>
+</html>
